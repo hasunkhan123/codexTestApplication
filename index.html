@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playlist Port — Convert playlists across music platforms</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0f14;
+        --surface: #121821;
+        --surface-2: #182230;
+        --text: #f4f6fb;
+        --muted: #b3bccb;
+        --accent: #7dd3fc;
+        --accent-strong: #38bdf8;
+        --border: #263245;
+        --success: #10b981;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at top, #111827 0%, var(--bg) 45%);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 32px 16px 48px;
+      }
+
+      .app {
+        width: min(1100px, 100%);
+        display: grid;
+        gap: 24px;
+      }
+
+      header {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        display: grid;
+        gap: 12px;
+      }
+
+      header h1 {
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+        margin: 0;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 60ch;
+        line-height: 1.6;
+      }
+
+      .pill-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .pill {
+        background: var(--surface-2);
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+      }
+
+      main {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        display: grid;
+        gap: 20px;
+      }
+
+      .card h2 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: #0f1622;
+        color: var(--text);
+        padding: 12px 14px;
+        font-size: 1rem;
+      }
+
+      input:focus,
+      select:focus,
+      button:focus {
+        outline: 2px solid var(--accent-strong);
+        outline-offset: 2px;
+      }
+
+      .helper {
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, var(--accent-strong), #22d3ee);
+        color: #04121f;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+      }
+
+      .status {
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        border-radius: 16px;
+        padding: 16px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .steps {
+        display: grid;
+        gap: 12px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .step span {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: var(--surface-2);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+      }
+
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: center;
+        padding-top: 12px;
+      }
+
+      .secondary-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .secondary-actions button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <p class="pill">Playlist Port</p>
+        <h1>Move your playlists to any music platform in minutes.</h1>
+        <p>
+          Paste a playlist link, choose a destination, and let Playlist Port map
+          every track. Designed to feel simple for first-time users and powerful
+          enough for power listeners.
+        </p>
+        <div class="pill-group" aria-label="Supported services">
+          <span class="pill">Spotify</span>
+          <span class="pill">Apple Music</span>
+          <span class="pill">YouTube Music</span>
+          <span class="pill">Tidal</span>
+          <span class="pill">Qobuz</span>
+          <span class="pill">Deezer</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="card" aria-labelledby="convert-title">
+          <h2 id="convert-title">Convert a playlist</h2>
+          <form>
+            <div class="field">
+              <label for="source-service">Source service</label>
+              <select id="source-service" name="source-service" required>
+                <option value="">Select a service</option>
+                <option>Spotify</option>
+                <option>Apple Music</option>
+                <option>YouTube Music</option>
+                <option>Tidal</option>
+                <option>Qobuz</option>
+                <option>Deezer</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="playlist-url">Playlist link</label>
+              <input
+                id="playlist-url"
+                name="playlist-url"
+                type="url"
+                placeholder="https://open.spotify.com/playlist/…"
+                required
+              />
+              <span class="helper">Paste a public playlist URL. We'll validate it before transfer.</span>
+            </div>
+            <div class="field">
+              <label for="destination-service">Destination service</label>
+              <select id="destination-service" name="destination-service" required>
+                <option value="">Choose where to send it</option>
+                <option>Spotify</option>
+                <option>Apple Music</option>
+                <option>YouTube Music</option>
+                <option>Tidal</option>
+                <option>Qobuz</option>
+                <option>Deezer</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="privacy">Matching preference</label>
+              <select id="privacy" name="privacy">
+                <option>Best match (recommended)</option>
+                <option>Exact title + artist only</option>
+                <option>Include live/explicit variants</option>
+              </select>
+              <span class="helper">Adjust how strict we should be when finding tracks.</span>
+            </div>
+            <button type="submit">Start conversion</button>
+          </form>
+          <div class="secondary-actions" role="group" aria-label="Additional actions">
+            <button type="button">Preview matches</button>
+            <button type="button">Save this as a template</button>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="insights-title">
+          <h2 id="insights-title">Conversion insights</h2>
+          <div class="status" role="status" aria-live="polite">
+            <strong>Ready to transfer</strong>
+            <span class="helper">No playlist loaded yet. Your progress and match quality will appear here.</span>
+          </div>
+          <div class="steps" aria-label="How it works">
+            <div class="step">
+              <span aria-hidden="true">1</span>
+              <div>
+                <strong>Connect accounts securely.</strong>
+                <p class="helper">OAuth sign-in keeps your credentials with each service.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span aria-hidden="true">2</span>
+              <div>
+                <strong>Review match confidence.</strong>
+                <p class="helper">Spot any remixes or live versions before exporting.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span aria-hidden="true">3</span>
+              <div>
+                <strong>Export with one click.</strong>
+                <p class="helper">Create the new playlist instantly on your destination platform.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        Built for listeners, DJs, and teams that share playlists across ecosystems.
+        Accessibility-first, keyboard friendly, and ready for dark rooms.
+      </footer>
+    </div>
+  </body>
+</html>
