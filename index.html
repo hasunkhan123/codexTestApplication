@@ -809,6 +809,15 @@
         }
       });
 
+      previewButton.addEventListener("click", () => {
+        const isHidden = previewPanel.classList.contains("is-hidden");
+        previewPanel.classList.toggle("is-hidden");
+        previewButton.setAttribute("aria-expanded", String(isHidden));
+        if (isHidden) {
+          renderPreview();
+        }
+      });
+
       updateAuthorizationUI();
     </script>
   </body>
