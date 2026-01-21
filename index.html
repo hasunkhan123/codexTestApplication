@@ -196,6 +196,77 @@
         font-weight: 600;
       }
 
+      .preview-panel {
+        background: rgba(15, 22, 34, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        display: none;
+        gap: 16px;
+      }
+
+      .preview-panel.is-visible {
+        display: grid;
+      }
+
+      .preview-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .preview-count {
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .preview-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .preview-item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: #0f1622;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+      }
+
+      .preview-item strong {
+        display: block;
+        font-size: 0.98rem;
+      }
+
+      .preview-item span {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .match-badge {
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        border-radius: 999px;
+        padding: 6px 12px;
+        color: var(--success);
+        font-weight: 600;
+        font-size: 0.85rem;
+        white-space: nowrap;
+      }
+
       .sr-only {
         position: absolute;
         width: 1px;
@@ -280,8 +351,20 @@
             <button type="submit">Start conversion</button>
           </form>
           <div class="secondary-actions" role="group" aria-label="Additional actions">
-            <button type="button">Preview matches</button>
+            <button type="button" id="preview-matches">Preview matches</button>
             <button type="button">Save this as a template</button>
+          </div>
+          <div class="preview-panel" id="preview-panel" aria-live="polite">
+            <div class="preview-header">
+              <div>
+                <strong>Preview matches</strong>
+                <p class="helper" id="preview-summary">
+                  Pick a source and destination to see shared tracks before you transfer.
+                </p>
+              </div>
+              <span class="preview-count" id="preview-count">0 matches</span>
+            </div>
+            <ul class="preview-list" id="preview-list"></ul>
           </div>
         </section>
 
@@ -322,5 +405,130 @@
         Accessibility-first, keyboard friendly, and ready for dark rooms.
       </footer>
     </div>
+    <script>
+      const previewButton = document.getElementById("preview-matches");
+      const sourceSelect = document.getElementById("source-service");
+      const destinationSelect = document.getElementById("destination-service");
+      const playlistInput = document.getElementById("playlist-url");
+      const previewPanel = document.getElementById("preview-panel");
+      const previewSummary = document.getElementById("preview-summary");
+      const previewCount = document.getElementById("preview-count");
+      const previewList = document.getElementById("preview-list");
+
+      const catalog = {
+        Spotify: [
+          "Blinding Lights — The Weeknd",
+          "Levitating — Dua Lipa",
+          "As It Was — Harry Styles",
+          "Kill Bill — SZA",
+          "Midnight City — M83",
+          "Lavender Haze — Taylor Swift",
+        ],
+        "Apple Music": [
+          "Blinding Lights — The Weeknd",
+          "Levitating — Dua Lipa",
+          "Anti-Hero — Taylor Swift",
+          "About Damn Time — Lizzo",
+          "Midnight City — M83",
+          "Bad Habit — Steve Lacy",
+        ],
+        "YouTube Music": [
+          "Blinding Lights — The Weeknd",
+          "As It Was — Harry Styles",
+          "Kill Bill — SZA",
+          "Industry Baby — Lil Nas X",
+          "Midnight City — M83",
+        ],
+        Tidal: [
+          "Levitating — Dua Lipa",
+          "As It Was — Harry Styles",
+          "Kill Bill — SZA",
+          "Bad Habit — Steve Lacy",
+          "Midnight City — M83",
+        ],
+        Qobuz: [
+          "Levitating — Dua Lipa",
+          "Anti-Hero — Taylor Swift",
+          "As It Was — Harry Styles",
+          "Midnight City — M83",
+        ],
+        Deezer: [
+          "Blinding Lights — The Weeknd",
+          "Levitating — Dua Lipa",
+          "As It Was — Harry Styles",
+          "Midnight City — M83",
+          "Bad Habit — Steve Lacy",
+        ],
+      };
+
+      const normalizeSong = (song) => song.toLowerCase().trim();
+
+      const getMatches = (source, destination) => {
+        if (!catalog[source] || !catalog[destination]) {
+          return [];
+        }
+
+        const destinationSet = new Set(
+          catalog[destination].map((song) => normalizeSong(song))
+        );
+
+        return catalog[source].filter((song) =>
+          destinationSet.has(normalizeSong(song))
+        );
+      };
+
+      const renderMatches = () => {
+        const source = sourceSelect.value;
+        const destination = destinationSelect.value;
+        const playlistUrl = playlistInput.value.trim();
+
+        previewPanel.classList.add("is-visible");
+
+        if (!source || !destination) {
+          previewSummary.textContent =
+            "Select both a source and destination service to preview shared tracks.";
+          previewCount.textContent = "0 matches";
+          previewList.innerHTML = "";
+          return;
+        }
+
+        if (!playlistUrl) {
+          previewSummary.textContent =
+            "Add a playlist link so we can preview the exact tracks you want to transfer.";
+          previewCount.textContent = "0 matches";
+          previewList.innerHTML = "";
+          return;
+        }
+
+        const matches = getMatches(source, destination);
+
+        previewSummary.textContent = `Showing songs available on ${source} and ${destination}.`;
+        previewCount.textContent = `${matches.length} match${
+          matches.length === 1 ? "" : "es"
+        }`;
+
+        if (matches.length === 0) {
+          previewList.innerHTML =
+            '<li class="helper">No overlapping songs found for these services. Try a different destination or loosen the matching preference.</li>';
+          return;
+        }
+
+        previewList.innerHTML = matches
+          .map(
+            (song) => `
+              <li class="preview-item">
+                <div>
+                  <strong>${song}</strong>
+                  <span>Available on both services</span>
+                </div>
+                <span class="match-badge">Ready to transfer</span>
+              </li>
+            `
+          )
+          .join("");
+      };
+
+      previewButton.addEventListener("click", renderMatches);
+    </script>
   </body>
 </html>
