@@ -8,16 +8,14 @@
       :root {
         color-scheme: dark;
         --bg: #0b0f14;
-        --surface: #121926;
-        --surface-2: #192234;
-        --surface-3: #0f1521;
+        --surface: #121821;
+        --surface-2: #182230;
         --text: #f4f6fb;
         --muted: #b3bccb;
-        --accent: #60a5fa;
+        --accent: #7dd3fc;
         --accent-strong: #38bdf8;
         --border: #263245;
         --success: #10b981;
-        --warning: #fbbf24;
       }
 
       * {
@@ -36,29 +34,29 @@
       }
 
       .app {
-        width: min(1120px, 100%);
+        width: min(1100px, 100%);
         display: grid;
-        gap: 28px;
+        gap: 24px;
       }
 
       header {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 24px;
-        padding: 28px;
+        border-radius: 20px;
+        padding: 24px;
         display: grid;
-        gap: 16px;
+        gap: 12px;
       }
 
       header h1 {
-        font-size: clamp(2rem, 3vw, 2.7rem);
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
         margin: 0;
       }
 
       header p {
         margin: 0;
         color: var(--muted);
-        max-width: 65ch;
+        max-width: 60ch;
         line-height: 1.6;
       }
 
@@ -80,13 +78,13 @@
       main {
         display: grid;
         gap: 24px;
-        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       }
 
       .card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 24px;
+        border-radius: 20px;
         padding: 24px;
         display: grid;
         gap: 20px;
@@ -107,25 +105,18 @@
       }
 
       input,
-      select,
-      textarea {
+      select {
         width: 100%;
         border-radius: 12px;
         border: 1px solid var(--border);
-        background: var(--surface-3);
+        background: #0f1622;
         color: var(--text);
         padding: 12px 14px;
         font-size: 1rem;
       }
 
-      textarea {
-        min-height: 90px;
-        resize: vertical;
-      }
-
       input:focus,
       select:focus,
-      textarea:focus,
       button:focus {
         outline: 2px solid var(--accent-strong);
         outline-offset: 2px;
@@ -154,19 +145,6 @@
         box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
       }
 
-      .secondary-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-
-      .secondary-actions button {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--text);
-        font-weight: 600;
-      }
-
       .status {
         background: rgba(16, 185, 129, 0.12);
         border: 1px solid rgba(16, 185, 129, 0.4);
@@ -174,24 +152,6 @@
         padding: 16px;
         display: grid;
         gap: 8px;
-      }
-
-      .metrics {
-        display: grid;
-        gap: 12px;
-      }
-
-      .metric {
-        background: var(--surface-2);
-        border-radius: 16px;
-        padding: 14px 16px;
-        border: 1px solid var(--border);
-        display: grid;
-        gap: 6px;
-      }
-
-      .metric strong {
-        font-size: 1.2rem;
       }
 
       .steps {
@@ -216,17 +176,24 @@
         font-weight: 700;
       }
 
-      .notice {
-        border-left: 3px solid var(--warning);
-        padding-left: 12px;
-        color: var(--muted);
-      }
-
       footer {
         color: var(--muted);
         font-size: 0.85rem;
         text-align: center;
         padding-top: 12px;
+      }
+
+      .secondary-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .secondary-actions button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-weight: 600;
       }
 
       .sr-only {
@@ -246,11 +213,11 @@
     <div class="app">
       <header>
         <p class="pill">Playlist Port</p>
-        <h1>Move playlists between Spotify, Apple Music, YouTube Music, and more.</h1>
+        <h1>Move your playlists to any music platform in minutes.</h1>
         <p>
-          Share a playlist link, choose where it should go, and review matches
-          before we transfer. Built for new listeners and power users who need
-          speed, clarity, and control.
+          Paste a playlist link, choose a destination, and let Playlist Port map
+          every track. Designed to feel simple for first-time users and powerful
+          enough for power listeners.
         </p>
         <div class="pill-group" aria-label="Supported services">
           <span class="pill">Spotify</span>
@@ -302,17 +269,13 @@
               </select>
             </div>
             <div class="field">
-              <label for="matching">Matching preference</label>
-              <select id="matching" name="matching">
+              <label for="privacy">Matching preference</label>
+              <select id="privacy" name="privacy">
                 <option>Best match (recommended)</option>
                 <option>Exact title + artist only</option>
-                <option>Include remixes and live versions</option>
+                <option>Include live/explicit variants</option>
               </select>
-              <span class="helper">Tune how strict we should be when finding tracks.</span>
-            </div>
-            <div class="field">
-              <label for="notes">Notes for your transfer (optional)</label>
-              <textarea id="notes" name="notes" placeholder="Example: Keep the same order, skip duplicates."></textarea>
+              <span class="helper">Adjust how strict we should be when finding tracks.</span>
             </div>
             <button type="submit">Start conversion</button>
           </form>
@@ -320,28 +283,13 @@
             <button type="button">Preview matches</button>
             <button type="button">Save this as a template</button>
           </div>
-          <p class="notice">We never store your credentials. Authentication happens via each provider.</p>
         </section>
 
         <section class="card" aria-labelledby="insights-title">
           <h2 id="insights-title">Conversion insights</h2>
           <div class="status" role="status" aria-live="polite">
             <strong>Ready to transfer</strong>
-            <span class="helper">No playlist loaded yet. Status, match rate, and next steps appear here.</span>
-          </div>
-          <div class="metrics" aria-label="Preview metrics">
-            <div class="metric">
-              <span class="helper">Estimated tracks</span>
-              <strong>—</strong>
-            </div>
-            <div class="metric">
-              <span class="helper">Match confidence</span>
-              <strong>—</strong>
-            </div>
-            <div class="metric">
-              <span class="helper">Duplicates found</span>
-              <strong>—</strong>
-            </div>
+            <span class="helper">No playlist loaded yet. Your progress and match quality will appear here.</span>
           </div>
           <div class="steps" aria-label="How it works">
             <div class="step">
@@ -371,7 +319,7 @@
 
       <footer>
         Built for listeners, DJs, and teams that share playlists across ecosystems.
-        Accessibility-first, keyboard friendly, and ready for late-night sessions.
+        Accessibility-first, keyboard friendly, and ready for dark rooms.
       </footer>
     </div>
   </body>
