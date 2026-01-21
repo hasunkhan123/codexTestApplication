@@ -313,6 +313,45 @@
         white-space: nowrap;
         border: 0;
       }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 10, 18, 0.75);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 10;
+      }
+
+      .modal-backdrop.is-visible {
+        display: flex;
+      }
+
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        max-width: 520px;
+        width: 100%;
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .modal-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .modal-actions .secondary {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
     </style>
   </head>
   <body>
@@ -465,6 +504,28 @@
       </footer>
     </div>
 
+    <div
+      class="modal-backdrop"
+      id="auth-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+      tabindex="-1"
+    >
+      <div class="modal">
+        <div>
+          <strong id="auth-modal-title">Authorize service</strong>
+          <p class="helper" id="auth-modal-message">
+            You're being redirected to sign in and approve access.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="auth-cancel">Cancel</button>
+          <button type="button" id="auth-confirm">Continue to sign in</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const sourceSelect = document.getElementById("source-service");
       const destinationSelect = document.getElementById("destination-service");
@@ -482,11 +543,27 @@
       const previewSummary = document.getElementById("preview-summary");
       const previewCount = document.getElementById("preview-count");
       const previewList = document.getElementById("preview-list");
+      const authModal = document.getElementById("auth-modal");
+      const authModalTitle = document.getElementById("auth-modal-title");
+      const authModalMessage = document.getElementById("auth-modal-message");
+      const authCancel = document.getElementById("auth-cancel");
+      const authConfirm = document.getElementById("auth-confirm");
 
       const authorizationState = {
         source: { service: "", authorized: false },
         destination: { service: "", authorized: false },
       };
+
+      const authUrls = {
+        Spotify: "https://accounts.spotify.com/authorize",
+        "Apple Music": "https://music.apple.com/authorize",
+        "YouTube Music": "https://music.youtube.com/authorize",
+        Tidal: "https://login.tidal.com/authorize",
+        Qobuz: "https://www.qobuz.com/authorize",
+        Deezer: "https://connect.deezer.com/oauth/auth.php",
+      };
+
+      let pendingAuthorization = null;
 
       const matchLibrary = [
         {
@@ -664,6 +741,35 @@
         }
       };
 
+      const openAuthModal = (type) => {
+        const service = authorizationState[type].service;
+        if (!service) return;
+        pendingAuthorization = type;
+        authModalTitle.textContent = `Authorize ${service}`;
+        authModalMessage.textContent =
+          `You will be redirected to ${service} to approve access. Return here once you finish signing in.`;
+        authModal.classList.add("is-visible");
+        authModal.focus();
+      };
+
+      const closeAuthModal = () => {
+        authModal.classList.remove("is-visible");
+        pendingAuthorization = null;
+      };
+
+      const confirmAuthorization = () => {
+        if (!pendingAuthorization) return;
+        const type = pendingAuthorization;
+        const service = authorizationState[type].service;
+        const targetUrl = authUrls[service];
+        if (targetUrl) {
+          window.open(targetUrl, "_blank", "noopener,noreferrer");
+        }
+        authorizationState[type].authorized = true;
+        updateAuthorizationUI();
+        closeAuthModal();
+      };
+
       const handleSelectChange = (type, value) => {
         authorizationState[type].service = value;
         authorizationState[type].authorized = false;
@@ -679,13 +785,28 @@
       });
 
       sourceAuthButton.addEventListener("click", () => {
-        authorizationState.source.authorized = true;
-        updateAuthorizationUI();
+        openAuthModal("source");
       });
 
       destinationAuthButton.addEventListener("click", () => {
-        authorizationState.destination.authorized = true;
-        updateAuthorizationUI();
+        openAuthModal("destination");
+      });
+
+      previewButton.addEventListener("click", () => {
+        const isHidden = previewPanel.classList.contains("is-hidden");
+        previewPanel.classList.toggle("is-hidden");
+        previewButton.setAttribute("aria-expanded", String(isHidden));
+        if (isHidden) {
+          renderPreview();
+        }
+      });
+
+      authCancel.addEventListener("click", closeAuthModal);
+      authConfirm.addEventListener("click", confirmAuthorization);
+      authModal.addEventListener("click", (event) => {
+        if (event.target === authModal) {
+          closeAuthModal();
+        }
       });
 
       previewButton.addEventListener("click", () => {
