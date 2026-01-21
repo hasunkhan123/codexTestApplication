@@ -345,8 +345,22 @@
             <button type="submit">Start conversion</button>
           </form>
           <div class="secondary-actions" role="group" aria-label="Additional actions">
-            <button type="button">Preview matches</button>
+            <button type="button" id="preview-matches" aria-expanded="false" aria-controls="preview-panel">
+              Preview matches
+            </button>
             <button type="button">Save this as a template</button>
+          </div>
+          <div class="preview-panel" id="preview-panel" aria-live="polite">
+            <div class="preview-header">
+              <div>
+                <strong>Preview matches</strong>
+                <p class="helper" id="preview-summary">
+                  Pick a source and destination to see shared tracks before you transfer.
+                </p>
+              </div>
+              <span class="preview-count" id="preview-count">0 matches</span>
+            </div>
+            <ul class="preview-list" id="preview-list"></ul>
           </div>
         </section>
 
