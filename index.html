@@ -554,13 +554,48 @@
         destination: { service: "", authorized: false },
       };
 
-      const authUrls = {
-        Spotify: "https://accounts.spotify.com/authorize",
-        "Apple Music": "https://music.apple.com/authorize",
-        "YouTube Music": "https://music.youtube.com/authorize",
-        Tidal: "https://login.tidal.com/authorize",
-        Qobuz: "https://www.qobuz.com/authorize",
-        Deezer: "https://connect.deezer.com/oauth/auth.php",
+      const authConfigs = {
+        Spotify: {
+          baseUrl: "https://accounts.spotify.com/authorize",
+          params: {
+            client_id: "YOUR_SPOTIFY_CLIENT_ID",
+            response_type: "code",
+            redirect_uri: "https://playlistport.example.com/auth/spotify/callback",
+            scope: "playlist-read-private playlist-read-collaborative",
+          },
+        },
+        "Apple Music": {
+          baseUrl: "https://music.apple.com/authorize",
+        },
+        "YouTube Music": {
+          baseUrl: "https://music.youtube.com/authorize",
+        },
+        Tidal: {
+          baseUrl: "https://login.tidal.com/authorize",
+        },
+        Qobuz: {
+          baseUrl: "https://www.qobuz.com/api.json/0.2/oauth/authorize",
+          params: {
+            client_id: "YOUR_QOBUZ_CLIENT_ID",
+            response_type: "code",
+            redirect_uri: "https://playlistport.example.com/auth/qobuz/callback",
+          },
+        },
+        Deezer: {
+          baseUrl: "https://connect.deezer.com/oauth/auth.php",
+        },
+      };
+
+      const buildAuthUrl = (service) => {
+        const config = authConfigs[service];
+        if (!config) return "";
+        const url = new URL(config.baseUrl);
+        if (config.params) {
+          Object.entries(config.params).forEach(([key, value]) => {
+            url.searchParams.set(key, value);
+          });
+        }
+        return url.toString();
       };
 
       let pendingAuthorization = null;
@@ -761,7 +796,7 @@
         if (!pendingAuthorization) return;
         const type = pendingAuthorization;
         const service = authorizationState[type].service;
-        const targetUrl = authUrls[service];
+        const targetUrl = buildAuthUrl(service);
         if (targetUrl) {
           window.open(targetUrl, "_blank", "noopener,noreferrer");
         }
