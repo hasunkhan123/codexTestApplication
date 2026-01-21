@@ -196,75 +196,49 @@
         font-weight: 600;
       }
 
-      .preview-panel {
-        background: rgba(15, 22, 34, 0.9);
-        border: 1px solid var(--border);
-        border-radius: 16px;
+      .authorization {
+        display: grid;
+        gap: 12px;
         padding: 16px;
-        display: none;
+        border-radius: 16px;
+        background: var(--surface-2);
+        border: 1px dashed var(--border);
+      }
+
+      .authorization-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
         gap: 16px;
-      }
-
-      .preview-panel.is-visible {
-        display: grid;
-      }
-
-      .preview-header {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        gap: 12px;
         align-items: center;
       }
 
-      .preview-count {
-        background: rgba(56, 189, 248, 0.15);
-        border: 1px solid rgba(56, 189, 248, 0.4);
-        border-radius: 999px;
-        padding: 6px 12px;
-        font-weight: 600;
-        color: var(--accent);
-      }
-
-      .preview-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: grid;
-        gap: 12px;
-      }
-
-      .preview-item {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        background: #0f1622;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 12px 14px;
-      }
-
-      .preview-item strong {
-        display: block;
-        font-size: 0.98rem;
-      }
-
-      .preview-item span {
+      .authorization-status {
+        font-size: 0.9rem;
         color: var(--muted);
-        font-size: 0.85rem;
       }
 
-      .match-badge {
-        background: rgba(16, 185, 129, 0.15);
-        border: 1px solid rgba(16, 185, 129, 0.4);
+      .authorization button[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+
+      .status strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
         border-radius: 999px;
-        padding: 6px 12px;
-        color: var(--success);
-        font-weight: 600;
-        font-size: 0.85rem;
-        white-space: nowrap;
+        background: var(--muted);
+      }
+
+      .status-dot.connected {
+        background: var(--success);
       }
 
       .sr-only {
@@ -339,6 +313,26 @@
                 <option>Deezer</option>
               </select>
             </div>
+            <div class="authorization" aria-live="polite">
+              <strong>Authorize connected services</strong>
+              <div class="authorization-row">
+                <div>
+                  <div><strong id="source-auth-title">Select a source service</strong></div>
+                  <div class="authorization-status" id="source-auth-status">Waiting for a source selection.</div>
+                </div>
+                <button type="button" id="source-auth-button" disabled>Authorize source</button>
+              </div>
+              <div class="authorization-row">
+                <div>
+                  <div><strong id="destination-auth-title">Select a destination service</strong></div>
+                  <div class="authorization-status" id="destination-auth-status">Waiting for a destination selection.</div>
+                </div>
+                <button type="button" id="destination-auth-button" disabled>Authorize destination</button>
+              </div>
+              <span class="helper" id="authorization-helper">
+                Choose a source and destination to enable secure sign-in before you start the transfer.
+              </span>
+            </div>
             <div class="field">
               <label for="privacy">Matching preference</label>
               <select id="privacy" name="privacy">
@@ -373,8 +367,10 @@
         <section class="card" aria-labelledby="insights-title">
           <h2 id="insights-title">Conversion insights</h2>
           <div class="status" role="status" aria-live="polite">
-            <strong>Ready to transfer</strong>
-            <span class="helper">No playlist loaded yet. Your progress and match quality will appear here.</span>
+            <strong><span class="status-dot" id="insights-dot"></span>Authorization pending</strong>
+            <span class="helper" id="insights-message">
+              Choose a source and destination service to unlock account authorization steps.
+            </span>
           </div>
           <div class="steps" aria-label="How it works">
             <div class="step">
@@ -407,132 +403,124 @@
         Accessibility-first, keyboard friendly, and ready for dark rooms.
       </footer>
     </div>
+
     <script>
-      const previewButton = document.getElementById("preview-matches");
       const sourceSelect = document.getElementById("source-service");
       const destinationSelect = document.getElementById("destination-service");
-      const previewPanel = document.getElementById("preview-panel");
-      const previewSummary = document.getElementById("preview-summary");
-      const previewCount = document.getElementById("preview-count");
-      const previewList = document.getElementById("preview-list");
+      const sourceAuthButton = document.getElementById("source-auth-button");
+      const destinationAuthButton = document.getElementById("destination-auth-button");
+      const sourceAuthTitle = document.getElementById("source-auth-title");
+      const destinationAuthTitle = document.getElementById("destination-auth-title");
+      const sourceAuthStatus = document.getElementById("source-auth-status");
+      const destinationAuthStatus = document.getElementById("destination-auth-status");
+      const authorizationHelper = document.getElementById("authorization-helper");
+      const insightsMessage = document.getElementById("insights-message");
+      const insightsDot = document.getElementById("insights-dot");
 
-      const catalog = {
-        Spotify: [
-          "Blinding Lights — The Weeknd",
-          "Levitating — Dua Lipa",
-          "As It Was — Harry Styles",
-          "Kill Bill — SZA",
-          "Midnight City — M83",
-          "Lavender Haze — Taylor Swift",
-        ],
-        "Apple Music": [
-          "Blinding Lights — The Weeknd",
-          "Levitating — Dua Lipa",
-          "Anti-Hero — Taylor Swift",
-          "About Damn Time — Lizzo",
-          "Midnight City — M83",
-          "Bad Habit — Steve Lacy",
-        ],
-        "YouTube Music": [
-          "Blinding Lights — The Weeknd",
-          "As It Was — Harry Styles",
-          "Kill Bill — SZA",
-          "Industry Baby — Lil Nas X",
-          "Midnight City — M83",
-        ],
-        Tidal: [
-          "Levitating — Dua Lipa",
-          "As It Was — Harry Styles",
-          "Kill Bill — SZA",
-          "Bad Habit — Steve Lacy",
-          "Midnight City — M83",
-        ],
-        Qobuz: [
-          "Levitating — Dua Lipa",
-          "Anti-Hero — Taylor Swift",
-          "As It Was — Harry Styles",
-          "Midnight City — M83",
-        ],
-        Deezer: [
-          "Blinding Lights — The Weeknd",
-          "Levitating — Dua Lipa",
-          "As It Was — Harry Styles",
-          "Midnight City — M83",
-          "Bad Habit — Steve Lacy",
-        ],
+      const authorizationState = {
+        source: { service: "", authorized: false },
+        destination: { service: "", authorized: false },
       };
 
-      const normalizeSong = (song) => song.toLowerCase().trim();
+      const updateInsights = () => {
+        const { source, destination } = authorizationState;
+        const bothSelected = source.service && destination.service;
+        const bothAuthorized = source.authorized && destination.authorized;
 
-      const getMatches = (source, destination) => {
-        if (!catalog[source] || !catalog[destination]) {
-          return [];
-        }
-
-        const destinationSet = new Set(
-          catalog[destination].map((song) => normalizeSong(song))
-        );
-
-        return catalog[source].filter((song) =>
-          destinationSet.has(normalizeSong(song))
-        );
-      };
-
-      const renderMatches = () => {
-        const source = sourceSelect.value;
-        const destination = destinationSelect.value;
-        if (!source || !destination) {
-          previewSummary.textContent =
-            "Select both a source and destination service to preview shared tracks.";
-          previewCount.textContent = "0 matches";
-          previewList.innerHTML = "";
+        if (!bothSelected) {
+          insightsMessage.textContent =
+            "Choose a source and destination service to unlock account authorization steps.";
+          insightsDot.classList.remove("connected");
           return;
         }
 
-        const matches = getMatches(source, destination);
-
-        previewSummary.textContent = `Showing songs available on ${source} and ${destination}.`;
-        previewCount.textContent = `${matches.length} match${
-          matches.length === 1 ? "" : "es"
-        }`;
-
-        if (matches.length === 0) {
-          previewList.innerHTML =
-            '<li class="helper">No overlapping songs found for these services. Try a different destination or loosen the matching preference.</li>';
+        if (source.service === destination.service) {
+          insightsMessage.textContent =
+            "Pick two different services to start authorization. Matching requires distinct accounts.";
+          insightsDot.classList.remove("connected");
           return;
         }
 
-        previewList.innerHTML = matches
-          .map(
-            (song) => `
-              <li class="preview-item">
-                <div>
-                  <strong>${song}</strong>
-                  <span>Available on both services</span>
-                </div>
-                <span class="match-badge">Ready to transfer</span>
-              </li>
-            `
-          )
-          .join("");
-      };
-
-      const togglePreview = () => {
-        const isVisible = previewPanel.classList.toggle("is-visible");
-        previewButton.setAttribute("aria-expanded", isVisible ? "true" : "false");
-        if (isVisible) {
-          renderMatches();
+        if (!bothAuthorized) {
+          insightsMessage.textContent =
+            "Authorize both services to securely connect accounts before transferring playlists.";
+          insightsDot.classList.remove("connected");
+          return;
         }
+
+        insightsMessage.textContent =
+          "Both services authorized. Paste a playlist URL to begin the transfer.";
+        insightsDot.classList.add("connected");
       };
 
-      previewButton.addEventListener("click", togglePreview);
-      [sourceSelect, destinationSelect].forEach((select) => {
-        select.addEventListener("change", () => {
-          if (previewPanel.classList.contains("is-visible")) {
-            renderMatches();
-          }
-        });
+      const updateAuthorizationUI = () => {
+        const { source, destination } = authorizationState;
+
+        sourceAuthTitle.textContent = source.service
+          ? `Source: ${source.service}`
+          : "Select a source service";
+        destinationAuthTitle.textContent = destination.service
+          ? `Destination: ${destination.service}`
+          : "Select a destination service";
+
+        sourceAuthStatus.textContent = source.service
+          ? source.authorized
+            ? "Connected and ready to read playlists."
+            : "Authorization required to access playlists."
+          : "Waiting for a source selection.";
+
+        destinationAuthStatus.textContent = destination.service
+          ? destination.authorized
+            ? "Connected and ready to create playlists."
+            : "Authorization required to create the new playlist."
+          : "Waiting for a destination selection.";
+
+        const sameService =
+          source.service && destination.service && source.service === destination.service;
+
+        sourceAuthButton.disabled = !source.service || sameService || source.authorized;
+        destinationAuthButton.disabled =
+          !destination.service || sameService || destination.authorized;
+
+        if (sameService) {
+          authorizationHelper.textContent =
+            "Select two different services to authorize a transfer between them.";
+        } else if (source.service && destination.service) {
+          authorizationHelper.textContent =
+            "Authorize both services to securely connect accounts before you start.";
+        } else {
+          authorizationHelper.textContent =
+            "Choose a source and destination to enable secure sign-in before you start the transfer.";
+        }
+
+        updateInsights();
+      };
+
+      const handleSelectChange = (type, value) => {
+        authorizationState[type].service = value;
+        authorizationState[type].authorized = false;
+        updateAuthorizationUI();
+      };
+
+      sourceSelect.addEventListener("change", (event) => {
+        handleSelectChange("source", event.target.value.trim());
       });
+
+      destinationSelect.addEventListener("change", (event) => {
+        handleSelectChange("destination", event.target.value.trim());
+      });
+
+      sourceAuthButton.addEventListener("click", () => {
+        authorizationState.source.authorized = true;
+        updateAuthorizationUI();
+      });
+
+      destinationAuthButton.addEventListener("click", () => {
+        authorizationState.destination.authorized = true;
+        updateAuthorizationUI();
+      });
+
+      updateAuthorizationUI();
     </script>
   </body>
 </html>
