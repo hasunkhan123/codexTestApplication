@@ -224,6 +224,67 @@
         transform: none;
       }
 
+      .preview-panel {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .preview-panel.is-hidden {
+        display: none;
+      }
+
+      .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .preview-count {
+        background: rgba(125, 211, 252, 0.15);
+        border: 1px solid rgba(125, 211, 252, 0.4);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+      }
+
+      .preview-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .preview-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background: rgba(15, 22, 34, 0.65);
+        border-radius: 14px;
+        padding: 12px 14px;
+        border: 1px solid rgba(38, 50, 69, 0.8);
+      }
+
+      .preview-item p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .confidence {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--accent);
+      }
+
       .status strong {
         display: inline-flex;
         align-items: center;
@@ -251,6 +312,45 @@
         clip: rect(0, 0, 0, 0);
         white-space: nowrap;
         border: 0;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 10, 18, 0.75);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 10;
+      }
+
+      .modal-backdrop.is-visible {
+        display: flex;
+      }
+
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        max-width: 520px;
+        width: 100%;
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .modal-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .modal-actions .secondary {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
       }
     </style>
   </head>
@@ -350,7 +450,7 @@
             </button>
             <button type="button">Save this as a template</button>
           </div>
-          <div class="preview-panel" id="preview-panel" aria-live="polite">
+          <div class="preview-panel is-hidden" id="preview-panel" aria-live="polite">
             <div class="preview-header">
               <div>
                 <strong>Preview matches</strong>
@@ -404,6 +504,28 @@
       </footer>
     </div>
 
+    <div
+      class="modal-backdrop"
+      id="auth-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+      tabindex="-1"
+    >
+      <div class="modal">
+        <div>
+          <strong id="auth-modal-title">Authorize service</strong>
+          <p class="helper" id="auth-modal-message">
+            You're being redirected to sign in and approve access.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="auth-cancel">Cancel</button>
+          <button type="button" id="auth-confirm">Continue to sign in</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const sourceSelect = document.getElementById("source-service");
       const destinationSelect = document.getElementById("destination-service");
@@ -416,10 +538,128 @@
       const authorizationHelper = document.getElementById("authorization-helper");
       const insightsMessage = document.getElementById("insights-message");
       const insightsDot = document.getElementById("insights-dot");
+      const previewButton = document.getElementById("preview-matches");
+      const previewPanel = document.getElementById("preview-panel");
+      const previewSummary = document.getElementById("preview-summary");
+      const previewCount = document.getElementById("preview-count");
+      const previewList = document.getElementById("preview-list");
+      const authModal = document.getElementById("auth-modal");
+      const authModalTitle = document.getElementById("auth-modal-title");
+      const authModalMessage = document.getElementById("auth-modal-message");
+      const authCancel = document.getElementById("auth-cancel");
+      const authConfirm = document.getElementById("auth-confirm");
 
       const authorizationState = {
         source: { service: "", authorized: false },
         destination: { service: "", authorized: false },
+      };
+
+      const authUrls = {
+        Spotify: "https://accounts.spotify.com/authorize",
+        "Apple Music": "https://music.apple.com/authorize",
+        "YouTube Music": "https://music.youtube.com/authorize",
+        Tidal: "https://login.tidal.com/authorize",
+        Qobuz: "https://www.qobuz.com/authorize",
+        Deezer: "https://connect.deezer.com/oauth/auth.php",
+      };
+
+      let pendingAuthorization = null;
+
+      const matchLibrary = [
+        {
+          title: "Midnight City",
+          artist: "M83",
+          confidence: "98% match",
+          sources: ["Spotify", "Apple Music", "YouTube Music", "Tidal"],
+        },
+        {
+          title: "Blinding Lights",
+          artist: "The Weeknd",
+          confidence: "96% match",
+          sources: ["Spotify", "Apple Music", "YouTube Music", "Deezer"],
+        },
+        {
+          title: "Do I Wanna Know?",
+          artist: "Arctic Monkeys",
+          confidence: "93% match",
+          sources: ["Spotify", "Apple Music", "Tidal", "Qobuz"],
+        },
+        {
+          title: "Bad Habit",
+          artist: "Steve Lacy",
+          confidence: "92% match",
+          sources: ["Spotify", "Apple Music", "YouTube Music", "Deezer"],
+        },
+      ];
+
+      const getMatchesForServices = (source, destination) =>
+        matchLibrary.filter(
+          (track) => track.sources.includes(source) && track.sources.includes(destination)
+        );
+
+      const renderPreview = () => {
+        previewList.innerHTML = "";
+        const { source, destination } = authorizationState;
+        const matches = getMatchesForServices(source.service, destination.service);
+
+        previewCount.textContent = `${matches.length} matches`;
+
+        if (!matches.length) {
+          const empty = document.createElement("li");
+          empty.className = "preview-item";
+          empty.innerHTML = `
+            <div>
+              <strong>No matches yet</strong>
+              <p>Try a different playlist or relax the match settings.</p>
+            </div>
+            <span class="confidence">0% match</span>
+          `;
+          previewList.appendChild(empty);
+          return;
+        }
+
+        matches.forEach((track) => {
+          const item = document.createElement("li");
+          item.className = "preview-item";
+          item.innerHTML = `
+            <div>
+              <strong>${track.title}</strong>
+              <p>${track.artist}</p>
+            </div>
+            <span class="confidence">${track.confidence}</span>
+          `;
+          previewList.appendChild(item);
+        });
+      };
+
+      const updatePreviewSummary = () => {
+        const { source, destination } = authorizationState;
+        const bothSelected = source.service && destination.service;
+        const bothAuthorized = source.authorized && destination.authorized;
+        const sameService = source.service === destination.service;
+
+        if (!bothSelected) {
+          previewSummary.textContent =
+            "Pick a source and destination to see shared tracks before you transfer.";
+          previewButton.disabled = true;
+          return;
+        }
+
+        if (sameService) {
+          previewSummary.textContent = "Choose two different services to compare playlists.";
+          previewButton.disabled = true;
+          return;
+        }
+
+        if (!bothAuthorized) {
+          previewSummary.textContent =
+            "Authorize both services to preview track matches with full metadata.";
+          previewButton.disabled = false;
+          return;
+        }
+
+        previewSummary.textContent = `Previewing shared tracks between ${source.service} and ${destination.service}.`;
+        previewButton.disabled = false;
       };
 
       const updateInsights = () => {
@@ -494,6 +734,40 @@
         }
 
         updateInsights();
+        updatePreviewSummary();
+
+        if (!previewPanel.classList.contains("is-hidden")) {
+          renderPreview();
+        }
+      };
+
+      const openAuthModal = (type) => {
+        const service = authorizationState[type].service;
+        if (!service) return;
+        pendingAuthorization = type;
+        authModalTitle.textContent = `Authorize ${service}`;
+        authModalMessage.textContent =
+          `You will be redirected to ${service} to approve access. Return here once you finish signing in.`;
+        authModal.classList.add("is-visible");
+        authModal.focus();
+      };
+
+      const closeAuthModal = () => {
+        authModal.classList.remove("is-visible");
+        pendingAuthorization = null;
+      };
+
+      const confirmAuthorization = () => {
+        if (!pendingAuthorization) return;
+        const type = pendingAuthorization;
+        const service = authorizationState[type].service;
+        const targetUrl = authUrls[service];
+        if (targetUrl) {
+          window.open(targetUrl, "_blank", "noopener,noreferrer");
+        }
+        authorizationState[type].authorized = true;
+        updateAuthorizationUI();
+        closeAuthModal();
       };
 
       const handleSelectChange = (type, value) => {
@@ -511,13 +785,28 @@
       });
 
       sourceAuthButton.addEventListener("click", () => {
-        authorizationState.source.authorized = true;
-        updateAuthorizationUI();
+        openAuthModal("source");
       });
 
       destinationAuthButton.addEventListener("click", () => {
-        authorizationState.destination.authorized = true;
-        updateAuthorizationUI();
+        openAuthModal("destination");
+      });
+
+      previewButton.addEventListener("click", () => {
+        const isHidden = previewPanel.classList.contains("is-hidden");
+        previewPanel.classList.toggle("is-hidden");
+        previewButton.setAttribute("aria-expanded", String(isHidden));
+        if (isHidden) {
+          renderPreview();
+        }
+      });
+
+      authCancel.addEventListener("click", closeAuthModal);
+      authConfirm.addEventListener("click", confirmAuthorization);
+      authModal.addEventListener("click", (event) => {
+        if (event.target === authModal) {
+          closeAuthModal();
+        }
       });
 
       updateAuthorizationUI();
