@@ -351,7 +351,9 @@
             <button type="submit">Start conversion</button>
           </form>
           <div class="secondary-actions" role="group" aria-label="Additional actions">
-            <button type="button" id="preview-matches">Preview matches</button>
+            <button type="button" id="preview-matches" aria-expanded="false" aria-controls="preview-panel">
+              Preview matches
+            </button>
             <button type="button">Save this as a template</button>
           </div>
           <div class="preview-panel" id="preview-panel" aria-live="polite">
@@ -409,7 +411,6 @@
       const previewButton = document.getElementById("preview-matches");
       const sourceSelect = document.getElementById("source-service");
       const destinationSelect = document.getElementById("destination-service");
-      const playlistInput = document.getElementById("playlist-url");
       const previewPanel = document.getElementById("preview-panel");
       const previewSummary = document.getElementById("preview-summary");
       const previewCount = document.getElementById("preview-count");
@@ -480,21 +481,9 @@
       const renderMatches = () => {
         const source = sourceSelect.value;
         const destination = destinationSelect.value;
-        const playlistUrl = playlistInput.value.trim();
-
-        previewPanel.classList.add("is-visible");
-
         if (!source || !destination) {
           previewSummary.textContent =
             "Select both a source and destination service to preview shared tracks.";
-          previewCount.textContent = "0 matches";
-          previewList.innerHTML = "";
-          return;
-        }
-
-        if (!playlistUrl) {
-          previewSummary.textContent =
-            "Add a playlist link so we can preview the exact tracks you want to transfer.";
           previewCount.textContent = "0 matches";
           previewList.innerHTML = "";
           return;
@@ -528,7 +517,22 @@
           .join("");
       };
 
-      previewButton.addEventListener("click", renderMatches);
+      const togglePreview = () => {
+        const isVisible = previewPanel.classList.toggle("is-visible");
+        previewButton.setAttribute("aria-expanded", isVisible ? "true" : "false");
+        if (isVisible) {
+          renderMatches();
+        }
+      };
+
+      previewButton.addEventListener("click", togglePreview);
+      [sourceSelect, destinationSelect].forEach((select) => {
+        select.addEventListener("change", () => {
+          if (previewPanel.classList.contains("is-visible")) {
+            renderMatches();
+          }
+        });
+      });
     </script>
   </body>
 </html>
